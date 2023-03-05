@@ -2,42 +2,52 @@ import asyncio
 import math
 import os
 import discord
+import requests
+import json
 from dotenv import load_dotenv
+from discord.ext import commands
+
 
 load_dotenv()
 
-TOKEN = os.getenv('TOKEN')
-PREFIX = '!'
-ALLOWED_CHANNELS = ['general']
+token = os.getenv('TOKEN')
 
 
 intents = discord.Intents.default()
-intents.guild_messages = True
-intents.reactions = True
+intents.message_content = True
 client = discord.Client(intents=intents)
 
 
+allowedChannels = ['general']
+
+prefix = '!'
+
+intents.guild_messages = True
+intents.reactions = True
+
 @client.event
 async def on_ready():
-    print(f'Logged in as {client.user}')
-
+    print('Logged in as',client.user.name)
+    
 
 @client.event
 async def on_message(message):
     if message.author.bot:
         return
-
+    
     if 'happy birthday' in message.content.lower():
-        msg = message.content.lower().split()
-        person = next((i for i in msg if '<' in i), '')
-        await message.channel.send(f'Happy Birthday! {person} By Sab 🎈🎉')
+        msg = (message.content.lower().split())
+        person = ''
+        for i in msg:
+            if '<' in i:
+                person = i
+        await message.channel.send('Happy Birthday! ' + person+' By Sab 🎈🎉')
+    print('message - content', message.content)
+    
 
-    print(f'{message.author.name} said: {message.content}')
+    print(f"{message.author.name} said: {message.content}")
 
-    if not message.content.startswith(PREFIX):
-        return
-
-    args = message.content[len(PREFIX):].strip().split()
+    args = message.content[len(prefix):].strip().split()
     command = args.pop(0).lower()
 
     if command == 'poll':
@@ -63,14 +73,15 @@ async def on_message(message):
                 await poll_message.edit(content=poll_message_text_with_timer)
                 await asyncio.sleep(1)
 
-            await poll_message.clear_reactions()
+            await poll_message.remove_reaction('👍', client.user)
+            await poll_message.remove_reaction('👎', client.user)
 
             # Get the poll results
             poll_message = await message.channel.fetch_message(poll_message.id)
             results = poll_message.reactions
 
             # Format the poll results
-            total_votes = sum(reaction.count for reaction in results)  # Subtract 1 to exclude the bot's own reaction
+            total_votes = sum(reaction.count - 1 for reaction in results)  # Subtract 1 to exclude the bot's own reaction
             result_text = f'**Poll Results:**\n{poll_message_text}\n'
             for reaction in results:
                 users = []
@@ -82,7 +93,7 @@ async def on_message(message):
                     percentage = 0
                 else:
                     percentage = math.ceil(count / total_votes * 100)
-                result_text += f'{reaction.emoji}: {count}/{total_votes} ({percentage}%)\n'
+                result_text += f'{reaction.emoji}: {count} {total_votes} ({percentage}%)\n'
 
             # Display the poll results
             await message.channel.send(result_text)
