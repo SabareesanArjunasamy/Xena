@@ -70,7 +70,7 @@ async def on_message(message):
             results = poll_message.reactions
 
             # Format the poll results
-            total_votes = sum(reaction.count - 1 for reaction in results)  # Subtract 1 to exclude the bot's own reaction
+            total_votes = sum(reaction.count for reaction in results)  # Subtract 1 to exclude the bot's own reaction
             result_text = f'**Poll Results:**\n{poll_message_text}\n'
             for reaction in results:
                 users = []
